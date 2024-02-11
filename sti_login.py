@@ -28,12 +28,6 @@ class Library_UI(ctk.CTk):
         self.wm_iconbitmap()
         self.wm_iconphoto(False, self.iconpath)
 
-        db = sql.connect(f"file:{self.assets_directory}informations.db?mode=rw", uri=True)
-        #self.cursor = 
-
-        self.name_roll = [TestConst("Ralph Ompoc", Image.open(f"{self.image_directory}\\pic.png")), 
-                          TestConst("Jamaica Lapig", Image.open(f"{self.image_directory}\\maica.png"))]
-
         self.overrideredirect(True)
 
         self.title("STI Library Login")
@@ -59,7 +53,7 @@ class Library_UI(ctk.CTk):
             style = style | WS_EX_APPWINDOW
             res = windll.user32.SetWindowLongPtrW(hwnd, GWL_EXSTYLE, style)
         self.wm_withdraw()
-        #self.wm_deiconify()
+        self.wm_deiconify()
 
     def center_frame(self, root, frame):
         frame.pack(expand=True, fill='both')
@@ -108,18 +102,36 @@ class Library_UI(ctk.CTk):
 
 class Events(Library_UI):
     def login(self, event):
-        if self.login:
-            self.after_cancel(self.id)
+        try:
+            if self.login:
+                self.after_cancel(self.id)
 
-        current_object = self.name_roll.pop(0)
-        self.name_roll.append(current_object)
+            user = Events.data_fetch(self)
         
-        user_picture = ctk.CTkImage(current_object.pic, size=(120, 120))
-        self.picture_label.configure(text="", image=user_picture)
-        self.user_name.configure(text=current_object.name)
-        self.search_bar.delete(0, tk.END)
-        self.login = True
-        self.id = self.after(3000, lambda: Events.test(self))
+            user_picture = ctk.CTkImage(Image.open(f"{self.image_directory}\\{user[3]}"), size=(120, 120))
+            self.picture_label.configure(text="", image=user_picture)
+            self.user_name.configure(text=user[1])
+            self.search_bar.delete(0, tk.END)
+            self.login = True
+            self.id = self.after(3000, lambda: Events.test(self))
+        except FileNotFoundError:
+            #error when cannot find user
+            self.search_bar.delete(0, tk.END)
+        except TypeError: 
+            #error when input involves characters
+            self.search_bar.delete(0, tk.END)
+
+    def data_fetch(self):
+        db = sql.connect(f"file:{self.assets_directory}informations.sqlite?mode=rw", uri=True)
+        cursor = db.cursor()
+        cursor.execute(f'SELECT * FROM Users WHERE TagID = "{self.search_bar.get()}"')
+
+        user = cursor.fetchone()
+
+        cursor.close()
+        db.close()
+
+        return user
 
     def test(self):
         self.picture_label.configure(text="", image=ctk.CTkImage(Image.open(f"{self.image_directory}blank.png"), size=(120, 120)))
@@ -150,8 +162,5 @@ class Events(Library_UI):
     def on_mouse_leave(self, event):
         self.button_enabled.set(False)
 
-    
-
 if __name__ == "__main__":
-    library = Library_UI()
-    library.mainloop()
+    Library_UI().mainloop()
