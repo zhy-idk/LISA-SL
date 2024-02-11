@@ -1,2 +1,2 @@
 # LISA-SL
-LISA
+Library Inventory System Application - Student Login
